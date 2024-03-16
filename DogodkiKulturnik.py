@@ -11,7 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 
-url = "https://www.slovenia.info/sl/dozivetja/dogodki"
+url = "https://dogodki.kulturnik.si/"
 response = requests.get(url)
 
 linksList = []
@@ -111,54 +111,60 @@ dataset = []
 for div in divs:
     date = div.find('h2').get_text(strip = True) #
 
-    eventsPerDay = div.find_all('div', class_='day-list')
-    for event in eventsPerDay:
-        time = event.find('span', class_='human_date').get_text()
-        detailsDiv = event.find('div', class_='labels')
-        h2_tag = detailsDiv.find('h2')
-        if h2_tag:  # Check if the h3 tag is found
-            name = h2_tag.get_text(strip=True) #
-            # Find the link within the h3 tag
-            a_tag = h2_tag.find('a')
-            if a_tag and 'href' in a_tag.attrs:  # Check if the a tag is found and has an href attribute
-                link = a_tag['href'] #
-            else:
-                link = None
-        
-        infoDiv = event.find('div', class_='info location')
-        infoDivs = infoDiv.find_all('div')
-        infoText = ' '.join(div.get_text() for div in infoDivs)
-        linksInInfoDiv = infoDiv.find_all('a')
+    allEventDays = div.find_all('div', class_='day-list')
+    for event in allEventDays:
+        time = event.find('span', class_='human_date').get_text() if event.find('span', class_='human_date') is not None else ''  # time of event
+        eventsPerDay = event.select('article.item.vevent')
 
-        # Append the text from each link to infoText
-        for linkInInfoDiv in linksInInfoDiv:
-            link_text = linkInInfoDiv.get_text(strip=True)
-            if link_text:  # Check if the link has text
-                infoText += ' ' + link_text
+        for eventInDay in eventsPerDay:
+            detailsDiv = eventInDay.find('div', class_='labels')
+            h2_tag = detailsDiv.find('h2') 
+            links = ''
 
-        
-        # Join all 'href' attributes of 'a' tags in 'linksInInforDiv' by '-'
-        infoLinks = '-'.join('https://dogodki.kulturnik.si/' + a_tagInInfoDiv['href'] for a_tagInInfoDiv in linksInInfoDiv if a_tagInInfoDiv and a_tagInInfoDiv.has_attr('href'))
+            if h2_tag:  # Check if the h3 tag is fou    2nd
+                name = h2_tag.get_text(strip=True) # name of event
+                # Find the link within the h3 tag
+                a_tag = h2_tag.find('a')
+                nameLink = ''
+                if a_tag and 'href' in a_tag.attrs:  # Check if the a tag is found and has an href attribute
+                    nameLink = a_tag['href'] # link to a page
+                else:
+                    nameLink = ''
+            
+            links = links + nameLink + "\n"
+            
+            infolocationDiv = eventInDay.find('div', class_='info location')
+            aLinks = infolocationDiv.find_all('a')
+            locationInfo = ''
+            for a in aLinks:
+                locationInfo = locationInfo + a.get_text() + '\n'
+                if a.has_attr('href'):
+                    links = links + 'https://dogodki.kulturnik.si/' + a['href'] + "\n"
+            
+            links = links.strip()
+            locationInfo = locationInfo.strip()
 
-        # Clean the name
-        formatted_name = re.sub(r'\s+', ' ', name)
+            hiddenDiv = infolocationDiv.find('div', class_='hidden')
+            startDate = hiddenDiv.find('time', class_='dtstart').get_text() if hiddenDiv.find('time', class_='dtstart') is not None else ''
+            endDate = hiddenDiv.find('time', class_='dtend').get_text() if hiddenDiv.find('time', class_='dtend') is not None else ''
 
-        dataset.append({
-            "Title": formatted_name,
-            "Details": infoText,
-            "InfoLinks": infoLinks,
-            "LinkToPage": link,
-            "Date": date
-        })
-        
+            # Clean the name
+            formatted_name = re.sub(r'\s+', ' ', name)
 
-
-    
+            dataset.append({
+                "Title": formatted_name,
+                "Description": '',
+                "Link": links,
+                "Date": date,
+                "StartDate": startDate,
+                "EndDate": endDate,
+                "Location": locationInfo
+            })
 
 # Convert to a Pandas DataFrame
-df = pd.DataFrame(dataset, columns=['Title', 'Details', 'InfoLinks', 'LinkToPage', "Date"])
+df = pd.DataFrame(dataset, columns=['Title', 'Description', 'Link', 'Date', 'StartDate', 'EndDate', 'Location'])
 # Save to a CSV file
-df.to_csv("DogodtkiKulturnik.csv", index=False, encoding='utf-8-sig')
+df.to_csv("CsvFiles/DogodtkiKulturnik2.csv", index=False, encoding='utf-8-sig')
 
 # Close the browser
 driver.quit()

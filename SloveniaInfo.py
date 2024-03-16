@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from datetime import datetime, timedelta
 
 url = "https://www.slovenia.info/sl/dozivetja/dogodki"
 response = requests.get(url)
@@ -144,26 +145,66 @@ for item in linksList:
 
     infoDiv = page.find('div', class_='greenBox')
     infoSpans = infoDiv.find_all('span')
-    infoText = ''
-    infoLink = ''
-    mapLink = ''
+    date = ''
+    location = ''
+    link = ''
+    description = ''
+    startDate = ''
+    endDate = ''
+    kontakt = ''
+    organizator = ''
+    tip = ''
     i = 0
     while i < len(infoSpans):
-        formattedText = re.sub(r'\s+', ' ', infoSpans[i].get_text())
-        if("Več informacij" in formattedText):
-            a_tag = infoSpans[i].find('a')
-            if a_tag and 'href' in a_tag.attrs:  # Check if the a tag is found and has an href attribute
-                infoLink = a_tag['href']
-            else:
-                infoLink = None
-        else:
-            if('Kraj:' in formattedText):
-                a_tag = infoSpans[i].find('a')
-                if a_tag and 'href' in a_tag.attrs:  # Check if the a tag is found and has an href attribute
-                    mapLink = a_tag['href']
+        text = infoSpans[i].get_text()
+        if 'Datum' in text:
+            dateMain = infoSpans[i].find('strong').get_text().strip() if infoSpans[i].find('strong') is not None else ''
+            if '-' not in dateMain:
+                if 'ob' in dateMain:
+                    date_obj = datetime.strptime(dateMain.split('ob')[0].strip(), "%d. %m. %Y")
+
+                    # Format the datetime object to the desired format "Day, DD. Month YYYY"
+                    date = date_obj.strftime("%A, %d. %B %Y")
                 else:
-                    mapLink = None
-            infoText = infoText + " " + formattedText + "\n"
+                    date_obj = datetime.strptime(dateMain, "%d. %m. %Y")
+
+                    # Format the datetime object to the desired format "Day, DD. Month YYYY"
+                    date = date_obj.strftime("%A, %d. %B %Y")
+            else:
+                if 'ob' in dateMain:
+                    date_obj1 = datetime.strptime(dateMain.split('-')[0].split('ob')[0].strip(), "%d. %m. %Y")
+                    formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+                    date_obj2 = datetime.strptime(dateMain.split('-')[1].split('ob')[0].strip(), "%d. %m. %Y")
+                    formatted_date2 = date_obj2.strftime("%A, %d. %B %Y")
+
+                    date = formatted_date1 + ' - ' + formatted_date2
+                else:
+                    date_obj1 = datetime.strptime(dateMain.split('-')[0].strip(), "%d. %m. %Y")
+                    formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+                    date_obj2 = datetime.strptime(dateMain.split('-')[1].strip(), "%d. %m. %Y")
+                    formatted_date2 = date_obj2.strftime("%A, %d. %B %Y")
+
+                    date = formatted_date1 + ' - ' + formatted_date2
+        elif 'Kraj' in text:
+            mapLink = infoSpans[i].find('a')
+            if mapLink is not None and 'href' in mapLink.attrs:
+                link = link + mapLink['href'] + '\n'
+            location = infoSpans[i].find('strong').get_text().strip() if infoSpans[i].find('strong') is not None else ''
+        elif 'Tip' in text:
+            tip = "Tip: " + infoSpans[i].find('strong').get_text().strip() if infoSpans[i].find('strong') is not None else '' + '\n'
+        elif 'Opomba' in text:
+            linkToPage = infoSpans[i].find('a')
+            if linkToPage is not None and 'href' in linkToPage.attrs:
+                link = link + linkToPage['href'] + '\n'
+        elif 'Kontakt' in text:
+            kontakt = "Kontakt: " + infoSpans[i].find('strong').get_text().strip() if infoSpans[i].find('strong') is not None else '' + '\n'
+        elif 'Organizator' in text:
+            kontakt = "Organizator: " + infoSpans[i].find('strong').get_text().strip() if infoSpans[i].find('strong') is not None else '' + '\n'
+        elif 'Več informacij' in text:
+            moreInfoLink = infoSpans[i].find('a')
+            if moreInfoLink and 'href' in moreInfoLink.attrs:  # Check if the a tag is found and has an href attribute
+                link = link + moreInfoLink['href']
+
         i = i + 1
 
     contentDiv = page.find('div', class_='news-content')
@@ -172,30 +213,34 @@ for item in linksList:
     if h1_tag:
         title = h1_tag.get_text()
     else:
-        title = None
+        title = ''
 
     summaryDiv = contentDiv.find('div', class_='summary')
     description = ''
     if summaryDiv:
-        description = summaryDiv.get_text()
+        description = description + summaryDiv.get_text()
 
     summaryPs = contentDiv.find_all('p', class_=lambda x: x != 'btnBack')
     for p in summaryPs:
         description = description + " " + p.get_text()
 
+    description = description + '\n' + tip + '\n' + kontakt + '\n' + organizator
+
     dataset.append({
         "Title": title,
-        "Details": infoText,
-        "Maplink": mapLink,
         "Description": description,
-        "Link": infoLink
+        "Link": link,
+        "Date": date,
+        "StartDate": startDate,
+        "EndDate": endDate,
+        "Location": location,
     })
     
 
 # Convert to a Pandas DataFrame
-df = pd.DataFrame(dataset, columns=['Title', 'Details', 'Maplink', 'Description', "Link"])
+df = pd.DataFrame(dataset, columns=['Title', 'Description', 'Link', 'Date', 'StartDate', 'EndDate', 'Location'])
 # Save to a CSV file
-df.to_csv("SloveniaInfo.csv", index=False, encoding='utf-8-sig')
+df.to_csv("CsvFiles/SloveniaInfo2.csv", index=False, encoding='utf-8-sig')
 
 # Close the browser
 driver.quit()

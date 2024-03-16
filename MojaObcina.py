@@ -107,6 +107,6 @@ listPerEvent = []
 input("aaa")
 
 # Convert to a Pandas DataFrame
-df = pd.DataFrame(listPerEvent, columns=['Eventname', 'Date', 'Location', 'Description', "Link"])
+df = pd.DataFrame(listPerEvent, columns=['Title', 'Description', 'Link', 'Date', 'Location'])
 # Save to a CSV file
-df.to_csv("VisitIzola.csv", index=False, encoding='utf-8-sig')
+df.to_csv("CsvFiles/NotVisitIsola.csv", index=False, encoding='utf-8-sig')

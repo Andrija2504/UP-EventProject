@@ -1,0 +1,2 @@
+pg_ctl -D "C:\Users\andri\Desktop\DataPSQL" start
+pg_ctl -D "C:\Users\andri\Desktop\DataPSQL" stop

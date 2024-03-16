@@ -2,11 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
+from datetime import datetime, timedelta
 
 url = "https://www.visitizola.com/dogodki"
 response = requests.get(url)
 
-namesList = []
+links = []
 
 char_map = {
     'š': 's',
@@ -38,30 +39,8 @@ if response.status_code == 200:
     events = soup.find_all('a', class_='eventsWrapp')  
 
     for event in events:
-        # Extract details - adjust based on actual HTML structure
-        date = event.find('div', class_='datum fSize70 letterSpacing007').get_text()  
-        name = event.find('div', class_='imeZvrstWrapp').get_text()  
-        preberiVec = event.find('div', class_='link').get_text()  
-
-        # Remove new lines and extra spaces
-        formatted_name = re.sub(r'\s+', ' ', name.strip())
-
-        formatted_name = formatted_name.replace(', ', '')
-        formatted_name = formatted_name.replace(',', '')
-
-        # Replace special characters with space (except for alphanumeric characters and spaces)
-        formatted_name = re.sub(r'[^\w\s+]', '', formatted_name)
-
-        # Use the replace_chars function to substitute characters
-        formatted_name = char_re.sub(replace_chars, formatted_name)
-
-        # Split into words and filter out any empty strings
-        words = [word for word in formatted_name.split(' ') if word]
-
-        # Rejoin words with hyphens
-        clean_title = '-'.join(words).lower()
-
-        namesList.append(clean_title)
+        
+        links.append('https://www.visitizola.com' + event['href'])
 
         # print(f"Event: {name}, Date: {date}, Location: {preberiVec}")
 
@@ -70,50 +49,120 @@ else:
 
 # print(namesList)
     
-listPerEvent = []
+dataset = []
 
-for item in namesList:
-    url = "https://www.visitizola.com/dogodki/" + item
-    response = requests.get(url)
+for item in links:
+    response = requests.get(item)
     # Ensure the request was successful
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # Find the event elements - you need to adjust the selector
-        titleInfo = soup.find('section', class_='clanekFotoTitle')  # title
+        titleInfoSection = soup.find('section', class_='clanekFotoTitle')  # title
+        title = titleInfoSection.find('h1').get_text().strip()
+
         descriptionDiv = soup.find('div', class_='clanekVsebina')
+
+        dateMain = descriptionDiv.find('div', class_='upper baskerville fSize40 fw400 letterSpacing01').get_text() if  descriptionDiv.find('div', class_='upper baskerville fSize40 fw400 letterSpacing01') is not None else ''
+        dateMain = dateMain.strip()
+        if '-' not in dateMain:
+            date_obj = datetime.strptime(dateMain, "%d/%m/%y")
+
+            # Format the datetime object to the desired format "Day, DD. Month YYYY"
+            date = date_obj.strftime("%A, %d. %B %Y")
+        else:
+            firstDate = dateMain.split('-')[0].strip()
+            secondDate = dateMain.split('-')[1].strip()
+
+            if len(firstDate) == 2:
+                firstDate = firstDate + secondDate[2:len(secondDate)]
+                date_obj1 = datetime.strptime(firstDate, "%d/%m/%y")
+                formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+            elif len(firstDate) == 5:
+                firstDate = (firstDate + secondDate[4:len(secondDate)]) if len(secondDate.split('/')[0]) == 1 else (firstDate + secondDate[5:len(secondDate)])
+                date_obj1 = datetime.strptime(firstDate, "%d/%m/%y")
+                formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+            elif len(firstDate) > 5:
+                date_obj1 = datetime.strptime(firstDate, "%d/%m/%y")
+                formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+
+            date_obj2 = datetime.strptime(secondDate, "%d/%m/%y")
+            formatted_date2 = date_obj2.strftime("%A, %d. %B %Y")
+
+            date = formatted_date1 + ' - ' + formatted_date2
+
+        location = ''
+        description = ''
+        startDate = ''
+        endDate = ''
+        link = ''
+        i = 0
+
+        
         # Find all <p> elements within this div
         paragraphs = descriptionDiv.find_all('p')
 
-        #print(item, " sadsa ", descriptionDiv)
-        #input("Ajde")
-
-        title = titleInfo.find('h1').get_text()  
-
-        date = descriptionDiv.find('div', class_='upper baskerville fSize40 fw400 letterSpacing01').get_text()  
-        location = descriptionDiv.find('span', class_='fw500').get_text() if descriptionDiv.find('span', class_='fw500') is not None else None  
-        description = ''
-        i = 0
         while i < len(paragraphs):
-            if i != 0:
-                description = description + "\n" + paragraphs[i].get_text(strip = True)
+            text = paragraphs[i].get_text()
+            if 'lokacija:' in text.lower():
+                location = paragraphs[i].find('span', class_='fw500').get_text() if paragraphs[i].find('span', class_='fw500') is not None else ''
+            elif 'ura:' in text.lower():
+                timeMain = paragraphs[i].find('span', class_='fw500').get_text() if paragraphs[i].find('span', class_='fw500') is not None else ''
+                if len(timeMain) == 0:
+                    time_pattern = r'\b\d{2}:\d{2}\b'
+                    # Find all occurrences of the pattern in the text
+                    timeValues = re.findall(time_pattern, text)
+                    if len(timeValues) == 2:
+                        timeMain = timeValues[0] + '-' + timeValues[1]
+                    else:
+                        timeMain = timeValues[0]
+                if '-' in dateMain:
+                    firstDate = dateMain.split('-')[0].strip()
+                    secondDate = dateMain.split('-')[1].strip()
+
+                    if len(firstDate) == 2:
+                        firstDate = firstDate + secondDate[2:len(secondDate)]
+                        date_obj1 = datetime.strptime(firstDate, "%d/%m/%y")
+                        formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+                    elif len(firstDate) == 5:
+                        firstDate = (firstDate + secondDate[4:len(secondDate)]) if len(secondDate.split('/')[0]) == 1 else (firstDate + secondDate[5:len(secondDate)])
+                        date_obj1 = datetime.strptime(firstDate, "%d/%m/%y")
+                        formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+                    elif len(firstDate) > 5:
+                        date_obj1 = datetime.strptime(firstDate, "%d/%m/%y")
+                        formatted_date1 = date_obj1.strftime("%A, %d. %B %Y")
+
+                    date_obj2 = datetime.strptime(secondDate, "%d/%m/%y")
+                    formatted_date2 = date_obj2.strftime("%A, %d. %B %Y")
+
+                    dateForTime = formatted_date1 + ' - ' + formatted_date2
+                else:
+                    dateForTime = datetime.strptime(dateMain, "%d/%m/%y").strftime("%Y-%m-%d")
+
+                if '-' not in timeMain:
+                    time = datetime.strptime(timeMain, "%H:%M").strftime("%H:%M:%S")
+                    startDate = dateForTime + "T" + time + "+01:00"
+                else:
+                    time1 = datetime.strptime(timeMain.split('-')[0].strip(), "%H:%M").strftime("%H:%M:%S")
+                    time2 = datetime.strptime(timeMain.split('-')[1].strip(), "%H:%M").strftime("%H:%M:%S")
+
+                    startDate = dateForTime + "T" + time1 + "+01:00"
+                    endDate = dateForTime + "T" + time2 + "+01:00"
+            elif 'več informacij' == text.lower():
+                if descriptionDiv.find('a', class_='baskerville aniLink fSize30') is not None:
+                    link = descriptionDiv.find('a', class_='baskerville aniLink fSize30')['href']
+            else:
+                description = description + paragraphs[i].get_text() + "\n"
             i = i + 1
 
-        link = ''
-
-        if "Več informacij" in descriptionDiv.get_text():
-            if descriptionDiv.find('a', class_='baskerville aniLink fSize30') is not None:
-                link = descriptionDiv.find('a', class_='baskerville aniLink fSize30')['href']
-
-        # Remove new lines and extra spaces
-        title = re.sub(r'\s+', ' ', title.strip())
-
-        listPerEvent.append({
-            "Eventname": title, 
-            "Date": date, 
-            "Location": location,
+        dataset.append({
+            "Title": title, 
             "Description": description,
-            "Link": link
+            "Link": link,
+            "Date": date, 
+            "StartDate": startDate,
+            "EndDate": endDate,
+            "Location": location,
         })
 
     else:
@@ -121,6 +170,6 @@ for item in namesList:
         print(f"Failed to retrieve the webpage. Status code: {response.status_code}")
 
 # Convert to a Pandas DataFrame
-df = pd.DataFrame(listPerEvent, columns=['Eventname', 'Date', 'Location', 'Description', "Link"])
+df = pd.DataFrame(dataset, columns=['Title', 'Description', 'Link', 'Date', 'StartDate', 'EndDate', 'Location'])
 # Save to a CSV file
-df.to_csv("VisitIzola.csv", index=False, encoding='utf-8-sig')
+df.to_csv("CsvFiles/VisitIzola2.csv", index=False, encoding='utf-8-sig')

@@ -51,12 +51,12 @@ while ShouldContinue:
             ShouldContinue = False
             break
 
-        h3_tag = event.find('h2')
-        if h3_tag:  # Check if the h3 tag is found
-            name = h3_tag.get_text(strip=True)
+        h2_tag = event.find('h2')
+        if h2_tag:  # Check if the h3 tag is found
+            name = h2_tag.get_text(strip=True)
 
             # Find the link within the h3 tag
-            a_tag = h3_tag.find('a')
+            a_tag = h2_tag.find('a')
             if a_tag and 'href' in a_tag.attrs:  # Check if the a tag is found and has an href attribute
                 link = a_tag['href']
             else:
@@ -85,10 +85,11 @@ while ShouldContinue:
 
         # Append the data to the list
         namesList.append({
-            "Name": formatted_name,
-            "Link": link,  # Correct the key name here
-            "Details": detailsText,
-            "Description": descriptionText
+            "Title": formatted_name,
+            "Description": descriptionText,
+            "Link": link,  # Correct the key name here,
+            "Date": None,
+            "Location": detailsText,
         })
 
         # print(f"Event: {name}, Date: {date}, Location: {preberiVec}")
@@ -101,6 +102,6 @@ while ShouldContinue:
 
 
 # Convert to a Pandas DataFrame
-df = pd.DataFrame(namesList, columns=['Name', 'Link', 'Details', 'Description'])
+df = pd.DataFrame(namesList, columns=['Title', 'Description', 'Link', 'Date', 'Location'])
 # Save to a CSV file
-df.to_csv("LoskeNovice.csv", index=False, encoding='utf-8-sig')
+df.to_csv("CsvFiles/LoskeNovice.csv", index=False, encoding='utf-8-sig')
