@@ -1,0 +1,7 @@
+{
+  "rule_only_slots": [
+    "eventname_slot",
+    "place_slot"
+  ],
+  "rule_only_loops": []
+}

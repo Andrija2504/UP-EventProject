@@ -12,17 +12,31 @@ rules:
   - intent: bot_challenge
   - action: utter_iamabot
 
-- rule: Tell the time
+- rule: Check if the area/city is set
+  condition:
+    - slot_was_set:
+      - place_slot: null
   steps:
-  - intent: inquire_time
-  - action: action_tell_time
+    - intent: general_information
+    - action: action_where_are_you_going
 
-- rule: Where I live intent
+- rule: Ask for event name if eventname_slot is not set
+  condition:
+    - slot_was_set:
+      - eventname_slot: null
   steps:
-  - intent: where_i_live
-  - action: action_remember_where
+    - or:
+      - intent: location_information
+      - intent: datetime_information
+      - intent: ticket_information
+    - action: action_what_is_event_name
 
-- rule: Time difference intent
+- rule: Getting the name of the area
   steps:
-  - intent: inquire_time_difference
-  - action: action_time_difference
+    - intent: inform
+    - action: action_remember_area
+
+- rule: Getting the name of the event
+  steps:
+    - intent: informEvent
+    - action: action_remember_event

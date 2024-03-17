@@ -16,25 +16,56 @@ nlu:
     - goodevening
     - good afternoon
     - Hi
-- intent: inquire_time
+
+- intent: general_information
   examples: |
-    - what time is it?
-    - what time is it in [Amsterdam](place)?
-    - what time is it in [London](place)
-    - tell me the time in [Lisbon](place)
-    - what is the current time in [Berlin](place)
-    - what time is it in [amsterdam](place)[amsterdam](place)
-    - Could you please give me the list of all events that are in [Izola](place)?
-- intent: where_i_live
+    - What are the major events happening during my visit?
+    - Are there any cultural festivals, sports events, or concerts scheduled?
+    - How do I find out about local events, like markets or community gatherings?
+    - How would I be able to find about events that are happening in the area?
+    - Could you please give me the list of all events that are in [anyplace](place)?
+
+- intent: ticket_information
   examples: |
-    - please remember that i live in [Amsterdam](place)
-    - my houes is in [London](place)
-    - reminder. I live in [London](place)
-    - my residence is in [Berlin](place)
-- intent: inquire_time_difference
+    - Do I need to purchase tickets in advance for events?
+    - Are there any discounts available (e.g., early bird, group rates)?
+    - Can tickets be refunded or exchanged?
+    
+- intent: datetime_information
   examples: |
-    - time difference between [Amsterdam](place)
-    - what is my time difference with [London](place)
+    - What are the dates and times for specific events?
+    - Are there any recurring events during the week?
+    - How long do these events usually last?
+
+- intent: location_information
+  examples: |
+    - Where are these events taking place?
+    - How do I get to the event venues? Are there public transport options?
+    - Is parking available and is it free or paid?
+
+- intent: accessiblity_information
+  examples: |
+    - Are the events and venues accessible for people with disabilities?
+    - Is there any special seating or accommodation for individuals with specific needs?
+
+- intent: languageguide_information
+  examples: |
+    - Are events guided or narrated in multiple languages?
+    - Is there an app or audio guide available for international tourists?
+
+- intent: inform
+  examples: |
+    - [Koper](place)
+    - [Izola](place)
+    - [Ankaran](place)
+    - [Piran](place)
+    - [Portoroz](place)
+    - [Ljubljana](place)
+- intent: informEvent
+  examples: |
+    - The event name is [something](event)
+    - The name of the event is [something](event)
+
 - intent: goodbye
   examples: |
     - cu
@@ -47,12 +78,6 @@ nlu:
     - see you around
     - bye bye
     - see you later
-- intent: inform
-  examples: |
-    - [Sitka](location)
-    - [Juneau](location)
-    - (Virginia](location)
-    - (San Francisko](location)
 - intent: search_provider
   examples: |
     - I need a [hospital](facility_type)
@@ -117,6 +142,7 @@ nlu:
     - am I talking to a bot?
     - am I talking to a human?
     - Are you bipolar
+
 - lookup: place
   examples: |
     - brussels
@@ -126,3 +152,8 @@ nlu:
     - amsterdam
     - seattle
     - izola
+    - koper
+    - piran
+    - portoroz
+    - ankaran
+    - ljubljana

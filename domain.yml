@@ -5,20 +5,41 @@ intents:
 - deny
 - goodbye
 - greet
-- inquire_time
-- inquire_time_difference
+- general_information
+- ticket_information
 - mood_great
 - mood_unhappy
-- where_i_live
+- datetime_information
+- location_information
+- accessiblity_information
+- languageguide_information
+- inform
+- informEvent
+
 entities:
 - place
+- event
+
 slots:
-  place:
+  place_slot:
     type: text
     influence_conversation: true
     mappings:
     - type: from_entity
       entity: place
+  eventname_slot:
+    type: text
+    influence_conversation: true
+    mappings:
+    - type: from_entity
+      entity: event
+  last_intent_slot:
+    type: text
+    influence_conversation: true
+    mappings:
+    - type: custom
+
+
 responses:
   utter_greet:
   - text: Hey! How are you?
@@ -33,12 +54,19 @@ responses:
   - text: Bye
   utter_iamabot:
   - text: I am a bot, powered by Rasa.
+
 actions:
 - utter_greet
 - utter_iamabot
-- action_tell_time
-- action_time_difference
-- action_remember_where
+- give_location_information
+- give_datetime_information
+- give_ticket_information
+- action_remember_event
+- action_remember_area
+- return_events
+- action_where_are_you_going
+- action_what_is_event_name
+
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
